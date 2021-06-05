@@ -41,7 +41,7 @@ void ClosedLoopStepper::loop()
     if (targetRotation != prevTargetRotation)
     {
         startAccelerating = true;
-        accelSpeed = 50;
+        accelSpeed = 200;
     }
     prevTargetRotation = targetRotation;
 
@@ -100,9 +100,19 @@ void ClosedLoopStepper::updateEncoder(unsigned long timeElapsed)
                 accelSpeed = 0;
             }
         }
-        if (abs(tempTargetSpeed) < 5)
+        if (abs(tempTargetSpeed) < 80)
         {
             startAccelerating = true;
+        }
+
+        if(tempTargetSpeed<0){
+            if(tempTargetSpeed>-80){
+                tempTargetSpeed = -80;
+            }
+        }else{
+            if(tempTargetSpeed<80){
+                tempTargetSpeed = 80;
+            }
         }
         stepper.setTragetSpeed(tempTargetSpeed);
 
@@ -143,7 +153,7 @@ bool ClosedLoopStepper ::calibrateEncoder()
         unsigned long currentTime = micros();
         unsigned long timeElapsed = currentTime - prevTime;
         prevTime = currentTime;
-        stepper.setTragetSpeed(-50); /* code */
+        stepper.setTragetSpeed(-150); /* code */
         encoderOperator();
         stepper.loop(timeElapsed);
     }
