@@ -1,0 +1,203 @@
+#include <Arduino.h>
+#include "Encoder.h"
+//#include "PID_v1.h"
+
+#define stepPin 4
+#define dirPin 3
+#define enablePin 11
+
+bool stepState = false;
+uint16_t stepTime = 0;
+uint16_t maxStepTime = 2000;
+uint16_t minStepTime = 600;
+uint16_t tempStepTime = 2000;
+
+uint32_t SPreachedTime = 0;
+bool SPreached = false;
+#define holdTime 20000
+
+Encoder myEnc(8, 9);
+#define absPosEncoder 7
+
+uint8_t encoderIncrements = 42;
+uint16_t stepsPerRevolution = 16640;
+
+bool accelareteToPos = false;
+double Setpoint, Input, Output;
+double PrevSetpoint = 0;
+long oldPosition = -999;
+
+//Specify the links and initial tuning parameters
+/*
+double Kp = 10, Ki = 0.1, Kd = 0.1;
+PID myPID(&Input, &Output, &Setpoint, Kp, Ki, Kd, DIRECT);
+void applyStep();
+*/
+void setup()
+{
+  Serial.begin(115200);
+  //initialize the variables we're linked to
+  Setpoint = 30;
+
+  pinMode(stepPin, OUTPUT);
+  pinMode(dirPin, OUTPUT);
+  pinMode(enablePin, OUTPUT);
+
+  pinMode(absPosEncoder, INPUT_PULLUP);
+
+  //turn the PID on
+  /*
+  myPID.SetMode(AUTOMATIC);
+  myPID.SetOutputLimits(-1000, 1000);
+  */
+}
+uint32_t lastSet = 0;
+uint32_t lastMicros = 0;
+bool lastAbs = 0;
+void loop()
+{
+
+  if (millis() - lastSet > 20000)
+  {
+    lastSet = millis();
+    Setpoint = Setpoint * (-1);
+    if(Setpoint< 0){
+      Setpoint = 0;
+    }
+  }
+  int tempMod2 = Setpoint;
+  int tempMod = tempMod2 % (encoderIncrements - 1);
+  Setpoint = tempMod;
+  if (Setpoint != PrevSetpoint)
+  {
+    SPreached = false;
+    PrevSetpoint = Setpoint;
+    accelareteToPos = true;
+    tempStepTime = maxStepTime;
+  }
+  if (digitalRead(absPosEncoder) == 0)
+  {
+    //myEnc.write(0);
+  }
+  bool absTemp = digitalRead(absPosEncoder);
+  if (lastAbs != absTemp)
+  {
+
+    if (absTemp == 0)
+    {
+      myEnc.write(0);
+    }
+  }
+
+  long newPosition = myEnc.read();
+  if (newPosition != oldPosition)
+  {
+    oldPosition = newPosition;
+  }
+
+  Input = newPosition;
+  myPID.Compute();
+
+  if (Setpoint- Input> 1)
+  {
+    //Serial.print("Left, ");
+    digitalWrite(dirPin, LOW);
+    digitalWrite(enablePin, LOW);
+    stepTime = map(abs(Output), 1000, 0, maxStepTime, minStepTime);
+    uint16_t stepTimeNow = stepTime;
+    if (accelareteToPos && stepTime == minStepTime)
+    {
+      if (tempStepTime > minStepTime + 10)
+      {
+        tempStepTime -= 10;
+        stepTimeNow = tempStepTime;
+      }
+      else
+      {
+        accelareteToPos = false;
+      }
+    }
+    else
+    {
+      accelareteToPos = false;
+    }
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(stepTimeNow);
+    digitalWrite(stepPin, LOW);
+  }
+  else if (Setpoint-Input<-1)
+  {
+    ////Serial.println("Manje");
+    //Serial.print("Right, ");
+    digitalWrite(dirPin, HIGH);
+    digitalWrite(enablePin, LOW);
+    stepTime = map(abs(Output), 1000, 0, maxStepTime, minStepTime);
+    uint16_t stepTimeNow = stepTime;
+    if (accelareteToPos && stepTime == minStepTime)
+    {
+      if (tempStepTime > minStepTime + 10)
+      {
+        tempStepTime -= 10;
+        stepTimeNow = tempStepTime;
+      }
+      else
+      {
+        accelareteToPos = false;
+      }
+    }
+    else
+    {
+      accelareteToPos = false;
+    }
+    digitalWrite(stepPin, HIGH);
+    delayMicroseconds(stepTimeNow);
+    digitalWrite(stepPin, LOW);
+  }
+  else
+  {
+    //Serial.print("Stop, ");
+    if (!SPreached)
+    {
+      SPreached = true;
+      SPreachedTime = millis();
+    }
+
+    uint32_t holdTimeTemp = millis() - SPreachedTime;
+
+    if (holdTimeTemp > holdTime)
+    {
+      digitalWrite(enablePin, HIGH);
+    }
+    else
+    {
+      digitalWrite(enablePin, LOW);
+    }
+  }
+
+  //Serial.print("Setpoint: ");
+  //Serial.print(Setpoint);
+  //Serial.print("Input: ");
+  //Serial.print(Input);
+  //Serial.print(", Output: ");
+  //Serial.print(Output);
+  //Serial.print(", StepTime: ");
+  //Serial.println(stepTime);
+
+  //applyStep();
+}
+
+void applyStep()
+{
+  /*
+  uint32_t tempMicros = micros() - lastMicros;
+
+  if (tempMicros > stepTime)
+  {
+    stepState = !stepState;
+    digitalWrite(stepPin, stepState);
+    //delayMicroseconds(2);
+    //stepState = !stepState;
+    //digitalWrite(stepPin, stepState);
+    lastMicros = micros();
+  }*/
+}

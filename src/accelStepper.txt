@@ -1,0 +1,138 @@
+#include <Arduino.h>
+#include "Encoder.h"
+#include "ClosedLoopStepper.h"
+
+#define stepPin 4
+#define dirPin 3
+#define enablePin 11
+
+bminStepTime = 600;
+uint16_t tempStepTime = 2000;
+
+uint32_t SPreachedTiool stepState = false;
+uint16_t stepTime = 0;
+uint16_t maxStepTime = 2000;
+uint16_t me = 0;
+bool SPreached = false;
+#define holdTime 10000
+
+AccelStepper stepper(AccelStepper::DRIVER, stepPin, dirPin);
+
+Encoder myEnc(8, 9);
+#define absPosEncoder 7
+
+int encoderIncrements = 40;
+int stepsPerRevolution = 16640;
+int currenAngPos = 0;
+
+bool accelareteToPos = false;
+int Setpoint;
+int PrevSetpoint = 0;
+long oldPosition = -999;
+long encoderPosition = 0;
+
+int determineCurrentAngularPosition(int);
+int determineNumOfStepps(int, int);
+void encoderOperator();
+void calibrateSensor();
+
+void setup()
+{
+  Serial.begin(115200);
+  //initialize the variables we're linked to
+  Setpoint = 300;
+
+  pinMode(stepPin, OUTPUT);
+  pinMode(dirPin, OUTPUT);
+  pinMode(enablePin, OUTPUT);
+
+  pinMode(absPosEncoder, INPUT_PULLUP);
+
+
+}
+ired = 0;
+
+void loop()
+{
+
+  encoderOperator();
+
+}
+int determineCurrentAngularPosition(int encPos)
+{
+  encPos = encPos % encoderIncrements;
+  int currAngPos = 0;
+  int angIncrement = 360.0 / encoderIncrements;
+
+  if (encPos < 0)
+  {
+    currAngPos = 360. + (encPos * angIncrement);
+  }
+  else
+  {
+    currAngPos = encPos * angIncrement;
+  }
+
+  return currAngPos;
+}
+
+int determineNumOfStepps(int currAng, int setAngle)
+{
+
+  int absAng = abs(currAng - setAngle);
+  absAng = absAng % 360;
+  if (absAng > 180)
+  {
+    absAng = 180 - absAng % 180;
+  }
+
+  float percentage = ((float)absAng / 360.0);
+  float steps = (float)stepsPerRevolution * percentage;
+
+  Serial.print(", AngularDistance: ");
+  Serial.println(absAng);
+
+  if ((currAng - setAngle + 360) % 360 > 180)
+  {
+    steps *= -1;
+  }
+  else
+  {
+    
+  }
+  Serial.print(", numOfStepps ");
+  Serial.println(steps);
+  return steps;
+}
+void encoderOperator()
+{
+  bool absTemp = digitalRead(absPosEncoder);
+  if (lastAbs != absTemp)
+  {
+
+    if (absTemp == 0)
+    {
+      myEnc.write(0);
+    }
+  }
+  lastAbs = absTemp;
+
+  long newPosition = myEnc.read();
+  if (newPosition != oldPosition)
+  {
+    oldPosition = newPosition;
+    currenAngPos = determineCurrentAngularPosition(newPosition);
+    Serial.print("CurrentAngPos: ");
+    Serial.println(currenAngPos);
+
+    numOfStepsRequired = determineNumOfStepps(currenAngPos, Setpoint);
+                                  
+  }
+
+  encoderPosition = newPosition % encoderIncrements;
+}
+
+void calibrateSensor()
+{
+
+}
