@@ -66,7 +66,7 @@ void ClosedLoopStepper::updateEncoder(unsigned long timeElapsed)
         if(abs(targetRotation - rotationPosition)<2){
             stepper.setReached = true;
         }
-
+/*
         if (targetSpeed > maxSpeed)
         {
 
@@ -113,6 +113,13 @@ void ClosedLoopStepper::updateEncoder(unsigned long timeElapsed)
             if(tempTargetSpeed<80){
                 tempTargetSpeed = 80;
             }
+        }*/
+
+        int tempTargetSpeed = 0;
+        if(targetSpeed>0){
+            tempTargetSpeed = 200;
+        }else if(targetSpeed<0){
+            tempTargetSpeed = -200;
         }
         stepper.setTragetSpeed(tempTargetSpeed);
 
