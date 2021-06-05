@@ -51,6 +51,8 @@ void StepperSpeedControler::setTragetSpeed(float speed)
         //setReached = false;
         if(setReached == false){
         enable();
+        }else{
+            disable();
         }
         speed *=-1;
         digitalWrite(dirPin, HIGH);
@@ -61,6 +63,8 @@ void StepperSpeedControler::setTragetSpeed(float speed)
         //setReached = false;
         if(setReached == false){
         enable();
+        }else{
+            disable();
         }
         rotatingLeft = false;
         digitalWrite(dirPin, LOW);
