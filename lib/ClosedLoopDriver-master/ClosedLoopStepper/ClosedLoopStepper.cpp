@@ -21,7 +21,7 @@ void ClosedLoopStepper::setup()
     targetRotation = 0;
 
     Kp = 20;
-    Ki = 0.0001;
+    Ki = 0.001;
     accel = 50;
     maxSpeed = 300;
     pinMode(absPosEncoder, INPUT_PULLUP);
