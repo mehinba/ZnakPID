@@ -1,8 +1,10 @@
 #include <Arduino.h>
 #include "ClosedLoopStepper/ClosedLoopStepper.h"
-//#include "string.h"
-//int Setpoint;
-//int PrevSetpoint = 0;
+
+int accelSpeedParam = 100;
+float kPparam = 30;
+float kIparam = 0.01;
+
 
 int determineCurrentAngularPosition(int);
 int determineNumOfStepps(int, int);
@@ -10,7 +12,7 @@ void encoderOperator();
 void calibrateSensor();
 void parseData();
 
-ClosedLoopStepper cls;
+ClosedLoopStepper cls(accelSpeedParam, kPparam, kIparam);
 int data = 0;
 
 void setup()

@@ -23,7 +23,7 @@ class ClosedLoopStepper
 {
 
 public:
-    ClosedLoopStepper(){};
+    ClosedLoopStepper(int accel_, float kp_, float ki_);
     void setup();
     void loop();
 
@@ -40,7 +40,7 @@ public:
     int maxSpeed;
     int accelSpeed = 50;
     unsigned long startTime = 0;
-    float integralLimit = 100;
+    float integralLimit = 200;
     float prevTargetSpeed = 0;
 
 

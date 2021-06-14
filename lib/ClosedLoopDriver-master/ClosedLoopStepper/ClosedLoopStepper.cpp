@@ -7,7 +7,12 @@
 //
 
 #include "ClosedLoopStepper.h"
-
+ClosedLoopStepper::ClosedLoopStepper(int accelSpeed_, float kp_, float ki_){
+        Kp = kp_;
+    Ki =ki_;
+    accel = accelSpeed_;
+    maxSpeed = 300;
+}
 void ClosedLoopStepper::setup()
 {
    // Serial.begin(115200);
@@ -20,10 +25,7 @@ void ClosedLoopStepper::setup()
     stepper.setTragetSpeed(0);
     targetRotation = 0;
 
-    Kp = 20;
-    Ki = 0.001;
-    accel = 50;
-    maxSpeed = 300;
+
     pinMode(absPosEncoder, INPUT_PULLUP);
 
     calibrateEncoder();
@@ -104,6 +106,18 @@ void ClosedLoopStepper::updateEncoder(unsigned long timeElapsed)
 
         }
 
+        if(tempTargetSpeed<0){
+            if(tempTargetSpeed > -120){
+                tempTargetSpeed = -120;
+            }
+        }else if(tempTargetSpeed<120 && tempTargetSpeed != 0){
+            tempTargetSpeed = 120;
+        }
+
+         if(abs(targetRotation - rotationPosition)<2){
+             tempTargetSpeed = 0;
+         }
+
         stepper.setTragetSpeed(tempTargetSpeed);
         encoderPositionOld = encoderPosition;
         encoderTime = -timeElapsed;
@@ -151,7 +165,7 @@ bool ClosedLoopStepper ::calibrateEncoder()
 
 void ClosedLoopStepper:: resetData(){
       startAccelerating = true;
-      accelSpeed = 50;
+      accelSpeed = accel;
       stepper.setReached = false;
       prevTargetSpeed = 0;
       startTime = millis();
