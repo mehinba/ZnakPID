@@ -31,12 +31,18 @@ public:
     void updateEncoder(unsigned long timeElapsed);
     void encoderOperator();
     bool calibrateEncoder();
+    void resetData();
     
 
     float Kp;
+    float Ki;
     float accel;
     int maxSpeed;
-    int accelSpeed = 10;
+    int accelSpeed = 50;
+    unsigned long startTime = 0;
+    float integralLimit = 100;
+    float prevTargetSpeed = 0;
+
 
     bool startAccelerating = true;
     int targetRotation;

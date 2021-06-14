@@ -21,6 +21,7 @@ void ClosedLoopStepper::setup()
     targetRotation = 0;
 
     Kp = 20;
+    Ki = 0.0001;
     accel = 50;
     maxSpeed = 300;
     pinMode(absPosEncoder, INPUT_PULLUP);
@@ -29,21 +30,11 @@ void ClosedLoopStepper::setup()
 }
 void ClosedLoopStepper::loop()
 {
-    //
+
 
     unsigned long currentTime = micros();
     unsigned long timeElapsed = currentTime - prevTime;
     prevTime = currentTime;
-
-    //
-    //updateSerial();
-    //
-    if (targetRotation != prevTargetRotation)
-    {
-        startAccelerating = true;
-        accelSpeed = 200;
-    }
-    prevTargetRotation = targetRotation;
 
     updateEncoder(timeElapsed);
     encoderOperator();
@@ -61,68 +52,59 @@ void ClosedLoopStepper::updateEncoder(unsigned long timeElapsed)
         float rotChange = posChange * (360 / 42);               //change in deg
         rotationSpeed = rotChange / ((float)encoderTime / 100); // rotspeed deg/sec
 
+        unsigned long ellpasedFromStart = millis() - startTime;
+        if(ellpasedFromStart>60000){
+            stepper.disable();
+                    encoderPositionOld = encoderPosition;
+        encoderTime = -timeElapsed;
+        return;
+        }
+        float integralSpeed;
         float targetSpeed = (targetRotation - rotationPosition) * Kp;
 
-        if(abs(targetRotation - rotationPosition)<2){
-            stepper.setReached = true;
+        if(stepper.setReached == false){
+            integralSpeed = (float)ellpasedFromStart * Ki;
+            if(integralSpeed > integralLimit){
+                integralSpeed = integralLimit;
+            }
+            if(targetSpeed < 0){
+                integralSpeed *= -1;
+            }
         }
-/*
-        if (targetSpeed > maxSpeed)
-        {
+        float tempTargetSpeed = 0;
+        targetSpeed += integralSpeed;
 
-            targetSpeed = maxSpeed;
+        if(abs(targetSpeed) < abs(prevTargetSpeed)){
+            startAccelerating = false;
         }
-        if (targetSpeed < -maxSpeed)
-        {
-            targetSpeed = -maxSpeed;
-        }
-        int tempTargetSpeed = targetSpeed;
-        if (startAccelerating)
-        {
-            if (targetSpeed > accelSpeed)
-            {
-                tempTargetSpeed = accelSpeed;
-                accelSpeed += 1;
-                //Serial.println("AccelSpeedIncreased");
-            }
-            else if (targetSpeed < -accelSpeed)
-            {
-                if(accelSpeed>0){
-                    accelSpeed = accelSpeed*(-1);
-                }
-                tempTargetSpeed = accelSpeed;
-                accelSpeed -= 1;
-                //Serial.println("AccelSpeedDecreased");
-            }
-            else
-            {
-                startAccelerating = false;
-                accelSpeed = 0;
-            }
-        }
-        if (abs(tempTargetSpeed) < 80)
-        {
-            startAccelerating = true;
-        }
+        prevTargetSpeed = targetSpeed;
 
-        if(tempTargetSpeed<0){
-            if(tempTargetSpeed>-80){
-                tempTargetSpeed = -80;
-            }
+        if(startAccelerating){
+           accelSpeed++;
+           if(accelSpeed>maxSpeed){
+               accelSpeed = maxSpeed;
+               startAccelerating = false;
+           } 
+           if(targetSpeed>0){
+               tempTargetSpeed = accelSpeed;
+           }else{
+               tempTargetSpeed = -accelSpeed;
+           }
         }else{
-            if(tempTargetSpeed<80){
-                tempTargetSpeed = 80;
-            }
-        }*/
-
-        int tempTargetSpeed = 0;
-        if(targetSpeed>0){
-            tempTargetSpeed = 200;
-        }else if(targetSpeed<0){
-            tempTargetSpeed = -200;
+            tempTargetSpeed = targetSpeed;
         }
-        stepper.setTragetSpeed(tempTargetSpeed);
 
+        
+
+        if(abs(targetRotation - rotationPosition)<2){
+            if(stepper.setReached == false){
+                stepper.setPointReachedTime = millis();
+            }
+            stepper.setReached = true;
+
+        }
+
+        stepper.setTragetSpeed(tempTargetSpeed);
         encoderPositionOld = encoderPosition;
         encoderTime = -timeElapsed;
     }
@@ -160,9 +142,17 @@ bool ClosedLoopStepper ::calibrateEncoder()
         unsigned long currentTime = micros();
         unsigned long timeElapsed = currentTime - prevTime;
         prevTime = currentTime;
-        stepper.setTragetSpeed(-150); /* code */
+        stepper.setTragetSpeed(-150); 
         encoderOperator();
         stepper.loop(timeElapsed);
     }
     return calibrated;
+}
+
+void ClosedLoopStepper:: resetData(){
+      startAccelerating = true;
+      accelSpeed = 50;
+      stepper.setReached = false;
+      prevTargetSpeed = 0;
+      startTime = millis();
 }

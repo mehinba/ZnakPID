@@ -51,7 +51,7 @@ void StepperSpeedControler::setTragetSpeed(float speed)
         //setReached = false;
         if(setReached == false){
         enable();
-        }else/*{
+        }/*else{
             disable();
         }*/
         speed *=-1;
@@ -63,7 +63,7 @@ void StepperSpeedControler::setTragetSpeed(float speed)
         //setReached = false;
         if(setReached == false){
         enable();
-        }else/*{
+        }/*else{
             disable();
         }*/
         rotatingLeft = false;
@@ -82,6 +82,8 @@ void StepperSpeedControler::setTragetSpeed(float speed)
 }
 void StepperSpeedControler::loop( unsigned long timeElapsed)
 {
+
+    
     if(stepPauze==-1)return;
     
     currentTime +=timeElapsed;

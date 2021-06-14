@@ -27,7 +27,7 @@ void setup()
 
   cls.setup();
 }
-uint32_t lastSet = 0;
+
 uint32_t lastSerialReceived = 0;
 
 void loop()
@@ -50,12 +50,8 @@ void parseData()
     if (dataTemp >= 0 && dataTemp <= 360 && elapsedFromLastValidData > 10000)
     {
       //validSetpointReceived
-      cls.stepper.setPointReachedTime = millis();
-      cls.startAccelerating = true;
-      cls.accelSpeed = 10;
-      lastSet = millis();
       lastSerialReceived = millis();
-      cls.stepper.setReached = false;
+      cls.resetData();
       cls.targetRotation = map(dataTemp, 0, 360, 0, 40);
     }
   }
