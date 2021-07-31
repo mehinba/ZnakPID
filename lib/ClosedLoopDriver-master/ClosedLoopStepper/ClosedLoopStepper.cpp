@@ -129,11 +129,12 @@ void ClosedLoopStepper ::encoderOperator()
     bool absTemp = digitalRead(absPosEncoder);
     if (lastAbs != absTemp)
     {
-
+        Serial.println("Magnet");
         if (absTemp == 0 && stepper.rotatingLeft)
         {
             calibrated = true;
             myEnc.write(0);
+            Serial.println("Nulirano");
         }
     }
     lastAbs = absTemp;
@@ -142,6 +143,8 @@ void ClosedLoopStepper ::encoderOperator()
     if (newPosition != oldPosition)
     {
         oldPosition = newPosition;
+        Serial.print("Promjena kvadradturnog: ");
+        Serial.println(newPosition);
     }
 
     encoderPosition = newPosition % encoderIncrements;
@@ -151,7 +154,7 @@ bool ClosedLoopStepper ::calibrateEncoder()
 {
     unsigned long calStart = millis();
 
-    while (!calibrated && calStart<60000)
+    while (!calibrated && (millis()-calStart)<60000)
     {
         unsigned long currentTime = micros();
         unsigned long timeElapsed = currentTime - prevTime;
