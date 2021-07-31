@@ -2,7 +2,7 @@
 #include "ClosedLoopStepper/ClosedLoopStepper.h"
 
 int accelSpeedParam = 100;
-float kPparam = 5;
+float kPparam = 10;
 float kIparam = 0.01;
 
 
