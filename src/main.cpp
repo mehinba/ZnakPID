@@ -2,7 +2,7 @@
 #include "ClosedLoopStepper/ClosedLoopStepper.h"
 
 int accelSpeedParam = 100;
-float kPparam = 30;
+float kPparam = 5;
 float kIparam = 0.01;
 
 
@@ -54,7 +54,7 @@ void parseData()
       //validSetpointReceived
       lastSerialReceived = millis();
       cls.resetData();
-      cls.targetRotation = map(dataTemp, 0, 360, 0, 40);
+      cls.targetRotation = map(dataTemp, 0, 360, 0, 42);
     }
   }
 }

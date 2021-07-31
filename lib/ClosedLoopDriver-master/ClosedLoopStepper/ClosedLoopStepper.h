@@ -54,7 +54,6 @@ public:
     unsigned long encoderTime;
 
     float rotationSpeed;
-    float rotationPosition;
 
     StepperSpeedControler stepper;
     int pinA = 8;
@@ -67,7 +66,6 @@ public:
     uint8_t encoderIncrements = 42;
     bool lastAbs = false;
 
-    long oldPosition = -999;
     long newPosition = 0;
 };
 

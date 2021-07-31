@@ -11,7 +11,7 @@ ClosedLoopStepper::ClosedLoopStepper(int accelSpeed_, float kp_, float ki_){
         Kp = kp_;
     Ki =ki_;
     accel = accelSpeed_;
-    maxSpeed = 300;
+    maxSpeed = 150;
 }
 void ClosedLoopStepper::setup()
 {
@@ -32,14 +32,12 @@ void ClosedLoopStepper::setup()
 }
 void ClosedLoopStepper::loop()
 {
-
-
     unsigned long currentTime = micros();
     unsigned long timeElapsed = currentTime - prevTime;
     prevTime = currentTime;
 
-    updateEncoder(timeElapsed);
     encoderOperator();
+    updateEncoder(timeElapsed);
 
     stepper.loop(timeElapsed);
 }
@@ -48,7 +46,7 @@ void ClosedLoopStepper::updateEncoder(unsigned long timeElapsed)
     encoderTime += timeElapsed;
     if (encoderTime > 10000)
     {
-        rotationPosition = encoderPosition;
+        float rotationPosition = encoderPosition;
 
         float posChange = encoderPosition - encoderPositionOld;
         float rotChange = posChange * (360 / 42);               //change in deg
@@ -57,12 +55,13 @@ void ClosedLoopStepper::updateEncoder(unsigned long timeElapsed)
         unsigned long ellpasedFromStart = millis() - startTime;
         if(ellpasedFromStart>60000){
             stepper.disable();
-                    encoderPositionOld = encoderPosition;
-        encoderTime = -timeElapsed;
-        return;
+            encoderPositionOld = encoderPosition;
+            encoderTime = -timeElapsed;
+            return;
         }
         float integralSpeed;
-        float targetSpeed = (targetRotation - rotationPosition) * Kp;
+        int direction = abs( targetRotation - rotationPosition ) > (encoderIncrements/2) ? 1 : -1;
+        float targetSpeed = abs(targetRotation - rotationPosition) * Kp * direction;
 
         if(stepper.setReached == false){
             integralSpeed = (float)ellpasedFromStart * Ki;
@@ -73,7 +72,6 @@ void ClosedLoopStepper::updateEncoder(unsigned long timeElapsed)
                 integralSpeed *= -1;
             }
         }
-        float tempTargetSpeed = 0;
         targetSpeed += integralSpeed;
 
         if(abs(targetSpeed) < abs(prevTargetSpeed)){
@@ -81,6 +79,8 @@ void ClosedLoopStepper::updateEncoder(unsigned long timeElapsed)
         }
         prevTargetSpeed = targetSpeed;
 
+
+        float tempTargetSpeed = 0;
         if(startAccelerating){
            accelSpeed++;
            if(accelSpeed>maxSpeed){
@@ -98,25 +98,22 @@ void ClosedLoopStepper::updateEncoder(unsigned long timeElapsed)
 
         
 
-        if(abs(targetRotation - rotationPosition)<2){
+        if(abs(targetRotation - rotationPosition)<2 || abs(targetRotation - rotationPosition)>(encoderIncrements-2)){
             if(stepper.setReached == false){
                 stepper.setPointReachedTime = millis();
             }
             stepper.setReached = true;
+            tempTargetSpeed = 0;
 
         }
 
         if(tempTargetSpeed<0){
-            if(tempTargetSpeed > -120){
-                tempTargetSpeed = -120;
+            if(tempTargetSpeed > -maxSpeed){
+                tempTargetSpeed = -maxSpeed;
             }
-        }else if(tempTargetSpeed<120 && tempTargetSpeed != 0){
-            tempTargetSpeed = 120;
+        }else if(tempTargetSpeed<maxSpeed && tempTargetSpeed != 0){
+            tempTargetSpeed = maxSpeed;
         }
-
-         if(abs(targetRotation - rotationPosition)<2){
-             tempTargetSpeed = 0;
-         }
 
         stepper.setTragetSpeed(tempTargetSpeed);
         encoderPositionOld = encoderPosition;
@@ -127,27 +124,20 @@ void ClosedLoopStepper::updateEncoder(unsigned long timeElapsed)
 void ClosedLoopStepper ::encoderOperator()
 {
     bool absTemp = digitalRead(absPosEncoder);
-    if (lastAbs != absTemp)
+    if ((lastAbs != absTemp) && (!absTemp))
     {
-        Serial.println("Magnet");
-        if (absTemp == 0 && stepper.rotatingLeft)
-        {
-            calibrated = true;
-            myEnc.write(0);
-            Serial.println("Nulirano");
-        }
+        calibrated = true;
+        myEnc.write(0);
+        encoderPositionOld = 0;
+        
+        Serial.println("Nulirano");
     }
     lastAbs = absTemp;
 
-    long newPosition = myEnc.read();
-    if (newPosition != oldPosition)
-    {
-        oldPosition = newPosition;
-        Serial.print("Promjena kvadradturnog: ");
-        Serial.println(newPosition);
+    encoderPosition = myEnc.read() % encoderIncrements;
+    if(encoderPosition<0){
+        encoderPosition += encoderIncrements;
     }
-
-    encoderPosition = newPosition % encoderIncrements;
 }
 
 bool ClosedLoopStepper ::calibrateEncoder()
