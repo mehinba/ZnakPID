@@ -8,7 +8,7 @@
 
 #include "ClosedLoopStepper.h"
 ClosedLoopStepper::ClosedLoopStepper(int accelSpeed_, float kp_, float ki_){
-        Kp = kp_;
+    Kp = kp_;
     Ki =ki_;
     accel = accelSpeed_;
     maxSpeed = 150;
@@ -55,12 +55,19 @@ void ClosedLoopStepper::updateEncoder(unsigned long timeElapsed)
         unsigned long ellpasedFromStart = millis() - startTime;
         if(ellpasedFromStart>60000){
             stepper.disable();
+            allowPosChange = true;
             encoderPositionOld = encoderPosition;
             encoderTime = -timeElapsed;
             return;
         }
+        if(targetRotation == rotationPosition){
+            allowPosChange = true;
+        }
         float integralSpeed;
-        int direction = abs( targetRotation - rotationPosition ) > (encoderIncrements/2) ? 1 : -1;
+        if(allowPosChange){
+        direction = abs( targetRotation - rotationPosition ) > (encoderIncrements/2) ? 1 : -1;
+        allowPosChange = false;
+        }
         float targetSpeed = abs(targetRotation - rotationPosition) * Kp * direction;
 
         if(stepper.setReached == false){
@@ -161,5 +168,6 @@ void ClosedLoopStepper:: resetData(){
       accelSpeed = accel;
       stepper.setReached = false;
       prevTargetSpeed = 0;
+      allowPosChange = true;
       startTime = millis();
 }

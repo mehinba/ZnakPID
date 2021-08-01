@@ -45,6 +45,8 @@ public:
 
 
     bool startAccelerating = true;
+    bool allowPosChange = true;
+    int direction = 1;
     int targetRotation;
     int prevTargetRotation;
     int encoderPosition;
